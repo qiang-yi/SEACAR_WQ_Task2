@@ -103,8 +103,12 @@ def rk_interpolation(method, folder_path, waterbody, parameter, year, season, co
     covariates= str(covariates)
     name1 = "SHP_" + "_".join([waterbody,parameter,year,season]) 
     name  = name1 + ".shp"
+    
+    
     if name in shpName:
         in_features = folder_path + "shapefiles/" + name
+        shapefile_path = os.path.join(folder_path+r"shapefiles", name)
+        data_count = int(arcpy.GetCount_management(shapefile_path).getOutput(0))
         dependent_field = "ResultValu"
         if "+" in covariates:
             in_explanatory_rasters = []
@@ -143,12 +147,12 @@ def rk_interpolation(method, folder_path, waterbody, parameter, year, season, co
                 ME   = data_points[0][1]
             print(f"Processing file: {name}")
             print("--- Time lapse: %s seconds ---" % (time.time() - start_time))
-            return 1,rmse,ME
+            return 1,rmse,ME,data_count
         except Exception:
             e = sys.exc_info()[1]
             print(parameter + " in " + str(year) + " " + season + " caused an error:")
             print(e.args[0])
-            return 0,np.nan,np.nan
+            return 0,np.nan,np.nan,data_count
     else:
-        print(f"Not enough data for RK interpolation in {name}, skipping")
-        return 0,np.nan,np.nan
+        print(f"No data for RK interpolation in {name}, skipping")
+        return 0,np.nan,np.nan,0
