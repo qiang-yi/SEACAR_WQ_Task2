@@ -82,7 +82,7 @@ def create_shp_season(df, waterbody, parameter_names, years, seasons, output_fol
 
                              
 # Function to interpolate water quality parameter values using RK method
-def rk_interpolation(method, folder_path, waterbody, parameter, year, season, covariates):
+def rk_interpolation(method, folder_path, waterbody, parameter, year, season, covariates, out_raster_folder,out_ga_folder,diagnostic_folder):
     area_shortnames = {
         'Guana Tolomato Matanzas': 'GTM',
         'Estero Bay': 'EB',
@@ -103,7 +103,7 @@ def rk_interpolation(method, folder_path, waterbody, parameter, year, season, co
     covariates= str(covariates)
     name1 = "SHP_" + "_".join([waterbody,parameter,year,season]) 
     name  = name1 + ".shp"
-    
+    name2 = "_".join([waterbody,parameter,year,season]) + "_RK"
     
     if name in shpName:
         in_features = folder_path + "shapefiles/" + name
@@ -119,9 +119,9 @@ def rk_interpolation(method, folder_path, waterbody, parameter, year, season, co
         else:
             in_explanatory_rasters = str(folder_path + "covariates/{}/{}.tif".format(covariates, waterbody))
 
-        out_ga_layer = folder_path + "ga_output/" + name1 + "_ga"
-        out_raster   = folder_path + "raster_output/" + name1 + ".tif"
-        out_diagnostic_feature_class = folder_path + "diagnostic_output/" + name1 + "_diag.shp"
+        out_ga_layer = out_ga_folder + name2 + "_ga"
+        out_raster   = out_raster_folder + name2 + ".tif"
+        out_diagnostic_feature_class = diagnostic_folder + name2 + "_diag.shp"
 
         mask = folder_path + "managed_area_boundary/"+  waterbody + ".shp"
         spatialref, c_size, parProFactor = 3086, 30, "80%"
@@ -147,12 +147,12 @@ def rk_interpolation(method, folder_path, waterbody, parameter, year, season, co
                 ME   = data_points[0][1]
             print(f"Processing file: {name}")
             print("--- Time lapse: %s seconds ---" % (time.time() - start_time))
-            return 1,rmse,ME,data_count
+            return 1,rmse,ME,data_count,out_raster
         except Exception:
             e = sys.exc_info()[1]
             print(parameter + " in " + str(year) + " " + season + " caused an error:")
             print(e.args[0])
-            return 0,np.nan,np.nan,data_count
+            return 0,np.nan,np.nan,data_count,np.nan
     else:
         print(f"No data for RK interpolation in {name}, skipping")
-        return 0,np.nan,np.nan,0
+        return 0,np.nan,np.nan,0,np.nan
