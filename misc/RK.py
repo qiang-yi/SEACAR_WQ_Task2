@@ -40,49 +40,45 @@ def delete_all_files(folder_path):
             
 
 # Function to create shapefiles, preparing for interpolation
-def create_shp_season(df, waterbody, parameter_names, years, seasons, output_folder):
-    for area in waterbody:
+def create_shp_season(df, output_folder):
+    grouped = df.groupby(['WaterBody', 'Year', 'Season', 'Parameter'])
+    
+    for group_keys, group_df in grouped:
+        area, year, season, param = group_keys
+        
         if area not in area_shortnames:
             print(f"No managed area found with name: {area}")
             continue
 
-        for year in years:
-            for season in seasons:
-                for param in parameter_names:
-                    if param not in param_shortnames:
-                        print(f"No parameter found with name: {param}")
-                        continue
+        if param not in param_shortnames:
+            print(f"No parameter found with name: {param}")
+            continue
 
-                    # Filter data for specific area, parameter, year, and season
-                    df_filtered = df[(df['WaterBody'] == area) & 
-                                     (df['ParameterName'] == param) & 
-                                     (df['Year'] == year) & 
-                                     (df['Season'] == season)]
+        group_df = group_df.dropna(subset=['x', 'y'])
 
-                    if df_filtered.empty:
-                        print(f"No data found for area: {area_shortnames[area]}, parameter: {param}, year: {year}, and season: {season}")
-                        continue
+        if group_df.empty:
+            print(f"No valid data found for area: {area_shortnames[area]}, parameter: {param_shortnames[param]}, year: {year}, and season: {season}")
+            continue
 
-                    # Print the number of data rows in the filtered DataFrame
-                    print(f"Number of data rows for {area_shortnames[area]}, {param}, {year}, {season}: {len(df_filtered)}")
+        print(f"Number of data rows for {area_shortnames[area]}, {param_shortnames[param]}, {year}, {season}: {len(group_df)}")
 
-                    temp_csv_path = os.path.join(output_folder, f"temp_{area}_{param}_{year}_{season}.csv")
-                    df_filtered.to_csv(temp_csv_path, index=False)
+        temp_csv_path = os.path.join(output_folder, f"temp_{area_shortnames[area]}_{param_shortnames[param]}_{year}_{season}.csv")
+        group_df.to_csv(temp_csv_path, index=False)
 
-                    feature_class_name = f'SHP_{area_shortnames[area]}_{param_shortnames[param]}_{year}_{season}.shp'
-                    feature_class_path = os.path.join(output_folder, feature_class_name)
-                    spatial_reference = arcpy.SpatialReference(4152)
-                    if arcpy.Exists(feature_class_path):
-                        arcpy.Delete_management(feature_class_name)
-                    arcpy.management.XYTableToPoint(temp_csv_path, feature_class_path, "Longitude_DD", "Latitude_DD", coordinate_system=spatial_reference)
+        feature_class_name = f'SHP_{area_shortnames[area]}_{param_shortnames[param]}_{year}_{season}.shp'
+        feature_class_path = os.path.join(output_folder, feature_class_name)
+        spatial_reference = arcpy.SpatialReference(3086)
 
-                    os.remove(temp_csv_path)
+        if arcpy.Exists(feature_class_path):
+            arcpy.Delete_management(feature_class_path)
+        arcpy.management.XYTableToPoint(temp_csv_path, feature_class_path, "x", "y", coordinate_system=spatial_reference)
 
-                    print(f"Shapefile for {area_shortnames[area]}: {param_shortnames[param]} for year {year} and season {season} has been saved as {feature_class_name}")
+        os.remove(temp_csv_path)
 
+        print(f"Shapefile for {area_shortnames[area]}: {param_shortnames[param]} for year {year} and season {season} has been saved as {feature_class_name}")
                              
 # Function to interpolate water quality parameter values using RK method
-def rk_interpolation(method, folder_path, waterbody, parameter, year, season, covariates):
+def rk_interpolation(method, folder_path, waterbody, parameter, year, season, covariates, out_raster_folder,out_ga_folder,diagnostic_folder):
     area_shortnames = {
         'Guana Tolomato Matanzas': 'GTM',
         'Estero Bay': 'EB',
@@ -92,7 +88,6 @@ def rk_interpolation(method, folder_path, waterbody, parameter, year, season, co
     }
     folder = os.path.join(folder_path+r"shapefiles")
     shpName = []
-    spatialref = "3086"
     for filename in os.listdir(folder):
         if filename.endswith(".shp"):
             shpName.append(filename)        
@@ -103,8 +98,12 @@ def rk_interpolation(method, folder_path, waterbody, parameter, year, season, co
     covariates= str(covariates)
     name1 = "SHP_" + "_".join([waterbody,parameter,year,season]) 
     name  = name1 + ".shp"
+    name2 = "_".join([waterbody,parameter,year,season]) + "_RK"
+    
     if name in shpName:
         in_features = folder_path + "shapefiles/" + name
+        shapefile_path = os.path.join(folder_path+r"shapefiles", name)
+        data_count = int(arcpy.GetCount_management(shapefile_path).getOutput(0))
         dependent_field = "ResultValu"
         if "+" in covariates:
             in_explanatory_rasters = []
@@ -115,15 +114,15 @@ def rk_interpolation(method, folder_path, waterbody, parameter, year, season, co
         else:
             in_explanatory_rasters = str(folder_path + "covariates/{}/{}.tif".format(covariates, waterbody))
 
-        out_ga_layer = folder_path + "ga_output/" + name1 + "_ga"
-        out_raster   = folder_path + "raster_output/" + name1 + ".tif"
-        out_diagnostic_feature_class = folder_path + "diagnostic_output/" + name1 + "_diag.shp"
+        out_ga_layer = out_ga_folder + name2 + "_ga"
+        out_raster   = out_raster_folder + name2 + ".tif"
+        out_diagnostic_feature_class = diagnostic_folder + name2 + "_diag.shp"
 
         mask = folder_path + "managed_area_boundary/"+  waterbody + ".shp"
-        spatialref, c_size, parProFactor = 3086, 30, "80%"
+        spatialref, c_size, parProFactor, smooth_r, extent = 3086, 30, "80%",10000, arcpy.Describe(mask).extent
         start_time = time.time()
         try:
-            with arcpy.EnvManager(mask = mask,
+            with arcpy.EnvManager(mask = mask,extent = extent,
                                   outputCoordinateSystem = arcpy.SpatialReference(spatialref),
                                   cellSize = c_size, 
                                   parallelProcessingFactor = parProFactor):
@@ -134,8 +133,7 @@ def rk_interpolation(method, folder_path, waterbody, parameter, year, season, co
                                                                   in_explanatory_rasters = in_explanatory_rasters,
                                                                   out_diagnostic_feature_class = out_diagnostic_feature_class,
                                                                   transformation_type = 'EMPIRICAL',
-                                                                  search_neighborhood = "NBRTYPE=SmoothCircular RADIUS=0.2 SMOOTH_FACTOR=0.2"
-                                                                     )
+                                                                  search_neighborhood = arcpy.SearchNeighborhoodSmoothCircular(smooth_r,0.5))
 
             with arcpy.da.SearchCursor(out_diagnostic_feature_class, ["RMSE","MeanError"]) as cursor:
                 data_points = [row for row in cursor]
@@ -143,12 +141,12 @@ def rk_interpolation(method, folder_path, waterbody, parameter, year, season, co
                 ME   = data_points[0][1]
             print(f"Processing file: {name}")
             print("--- Time lapse: %s seconds ---" % (time.time() - start_time))
-            return 1,rmse,ME
+            return 1,rmse,ME,data_count,out_raster
         except Exception:
             e = sys.exc_info()[1]
             print(parameter + " in " + str(year) + " " + season + " caused an error:")
             print(e.args[0])
-            return 0,np.nan,np.nan
+            return 0,np.nan,np.nan,data_count,np.nan
     else:
-        print(f"Not enough data for RK interpolation in {name}, skipping")
-        return 0,np.nan,np.nan
+        print(f"No data for RK interpolation in {name}, skipping")
+        return 0,np.nan,np.nan,0,np.nan
