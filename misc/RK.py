@@ -38,51 +38,80 @@ def delete_all_files(folder_path):
         if os.path.isfile(file_path):
             os.remove(file_path)
             
+def merge_with_lat_long(df, lat_long_df):
+    lat_long_df = lat_long_df.rename(columns={'ParameterName': 'Parameter'})
+
+    merged_df = pd.merge(df, 
+                  lat_long_df[['WaterBody', 'Year', 'Season', 'Parameter', 'x', 'y','RowID','ResultValue']], 
+                  on=['WaterBody', 'Year', 'Season', 'Parameter'], 
+                  how='left')
+    merged_df['RowID'] = merged_df['RowID'].astype('Int64')
+    return merged_df
 
 # Function to create shapefiles, preparing for interpolation
-def create_shp_season(df, waterbody, parameter_names, years, seasons, output_folder):
-    for area in waterbody:
+def create_shp_season(df, output_folder):
+    grouped = df.groupby(['WaterBody', 'Year', 'Season', 'Parameter'])
+    
+    for group_keys, group_df in grouped:
+        area, year, season, param = group_keys
+        
         if area not in area_shortnames:
             print(f"No managed area found with name: {area}")
             continue
 
-        for year in years:
-            for season in seasons:
-                for param in parameter_names:
-                    if param not in param_shortnames:
-                        print(f"No parameter found with name: {param}")
-                        continue
+        if param not in param_shortnames:
+            print(f"No parameter found with name: {param}")
+            continue
 
-                    # Filter data for specific area, parameter, year, and season
-                    df_filtered = df[(df['WaterBody'] == area) & 
-                                     (df['ParameterName'] == param) & 
-                                     (df['Year'] == year) & 
-                                     (df['Season'] == season)]
+        group_df = group_df.dropna(subset=['x', 'y'])
 
-                    if df_filtered.empty:
-                        print(f"No data found for area: {area_shortnames[area]}, parameter: {param}, year: {year}, and season: {season}")
-                        continue
+        if group_df.empty:
+            print(f"No valid data found for area: {area_shortnames[area]}, parameter: {param_shortnames[param]}, year: {year}, and season: {season}")
+            continue
 
-                    # Print the number of data rows in the filtered DataFrame
-                    print(f"Number of data rows for {area_shortnames[area]}, {param}, {year}, {season}: {len(df_filtered)}")
+        print(f"Number of data rows for {area_shortnames[area]}, {param_shortnames[param]}, {year}, {season}: {len(group_df)}")
 
-                    temp_csv_path = os.path.join(output_folder, f"temp_{area}_{param}_{year}_{season}.csv")
-                    df_filtered.to_csv(temp_csv_path, index=False)
+        temp_csv_path = os.path.join(output_folder, f"temp_{area_shortnames[area]}_{param_shortnames[param]}_{year}_{season}.csv")
+        group_df.to_csv(temp_csv_path, index=False)
 
-                    feature_class_name = f'SHP_{area_shortnames[area]}_{param_shortnames[param]}_{year}_{season}.shp'
-                    feature_class_path = os.path.join(output_folder, feature_class_name)
-                    spatial_reference = arcpy.SpatialReference(4152)
-                    if arcpy.Exists(feature_class_path):
-                        arcpy.Delete_management(feature_class_name)
-                    arcpy.management.XYTableToPoint(temp_csv_path, feature_class_path, "Longitude_DD", "Latitude_DD", coordinate_system=spatial_reference)
+        feature_class_name = f'SHP_{area_shortnames[area]}_{param_shortnames[param]}_{year}_{season}.shp'
+        feature_class_path = os.path.join(output_folder, feature_class_name)
+        spatial_reference = arcpy.SpatialReference(3086)
 
-                    os.remove(temp_csv_path)
+        if arcpy.Exists(feature_class_path):
+            arcpy.Delete_management(feature_class_path)
+        arcpy.management.XYTableToPoint(temp_csv_path, feature_class_path, "x", "y", coordinate_system=spatial_reference)
 
-                    print(f"Shapefile for {area_shortnames[area]}: {param_shortnames[param]} for year {year} and season {season} has been saved as {feature_class_name}")
+        os.remove(temp_csv_path)
 
+        print(f"Shapefile for {area_shortnames[area]}: {param_shortnames[param]} for year {year} and season {season} has been saved as {feature_class_name}")
+        
+def fill_nan_rowids(df, rowid_column):
+    # Check if the rowid_column exists in the DataFrame, if not create it
+    if rowid_column not in df.columns:
+        # Initialize the rowid_column with unique integer IDs starting from 1
+        df[rowid_column] = range(1, len(df) + 1)
+    else:
+        # Determine a safe starting point for new IDs, considering existing ones
+        max_rowid = df[rowid_column].max()
+        if np.isnan(max_rowid) or max_rowid is None:
+            max_rowid = 0  # Set to 0 if there are no existing valid IDs
+
+        # Generate a sequence of unique IDs large enough to cover all NaNs or None
+        num_nans = df[df[rowid_column].isna() | df[rowid_column].isnull()].shape[0]  # Count NaNs or None
+        unique_ids = range(int(max_rowid) + 1, int(max_rowid) + 1 + num_nans)
+
+        # Assign unique IDs to NaN or None values
+        nan_index = 0  # To keep track of the next unique ID to be assigned
+        for i in range(len(df)):
+            if np.isnan(df.at[i, rowid_column]):
+                df.at[i, rowid_column] = unique_ids[nan_index]
+                nan_index += 1
+        return df
+        
                              
 # Function to interpolate water quality parameter values using RK method
-def rk_interpolation(method, folder_path, waterbody, parameter, year, season, covariates, out_raster_folder,out_ga_folder,diagnostic_folder):
+def rk_interpolation(method, radius, folder_path, waterbody, parameter, year, season, covariates, out_raster_folder,out_ga_folder,std_error_folder,diagnostic_folder):
     area_shortnames = {
         'Guana Tolomato Matanzas': 'GTM',
         'Estero Bay': 'EB',
@@ -92,7 +121,6 @@ def rk_interpolation(method, folder_path, waterbody, parameter, year, season, co
     }
     folder = os.path.join(folder_path+r"shapefiles")
     shpName = []
-    spatialref = "3086"
     for filename in os.listdir(folder):
         if filename.endswith(".shp"):
             shpName.append(filename)        
@@ -121,13 +149,15 @@ def rk_interpolation(method, folder_path, waterbody, parameter, year, season, co
 
         out_ga_layer = out_ga_folder + name2 + "_ga"
         out_raster   = out_raster_folder + name2 + ".tif"
+        out_std_error= std_error_folder + name2 + ".tif"
         out_diagnostic_feature_class = diagnostic_folder + name2 + "_diag.shp"
 
         mask = folder_path + "managed_area_boundary/"+  waterbody + ".shp"
-        spatialref, c_size, parProFactor = 3086, 30, "80%"
+        smooth_r = radius
+        spatialref, c_size, parProFactor, extent = 3086, 30, "80%", arcpy.Describe(mask).extent
         start_time = time.time()
         try:
-            with arcpy.EnvManager(mask = mask,
+            with arcpy.EnvManager(mask = mask,extent = extent,
                                   outputCoordinateSystem = arcpy.SpatialReference(spatialref),
                                   cellSize = c_size, 
                                   parallelProcessingFactor = parProFactor):
@@ -138,8 +168,9 @@ def rk_interpolation(method, folder_path, waterbody, parameter, year, season, co
                                                                   in_explanatory_rasters = in_explanatory_rasters,
                                                                   out_diagnostic_feature_class = out_diagnostic_feature_class,
                                                                   transformation_type = 'EMPIRICAL',
-                                                                  search_neighborhood = "NBRTYPE=SmoothCircular RADIUS=0.2 SMOOTH_FACTOR=0.2"
-                                                                     )
+                                                                  search_neighborhood =arcpy.SearchNeighborhoodSmoothCircular(smooth_r,0.5))
+                arcpy.GALayerToRasters_ga(out_ga_layer, out_std_error,"PREDICTION_STANDARD_ERROR", None, c_size, 1, 1, "")
+                
 
             with arcpy.da.SearchCursor(out_diagnostic_feature_class, ["RMSE","MeanError"]) as cursor:
                 data_points = [row for row in cursor]
