@@ -37,13 +37,13 @@ def delete_all_files(folder_path):
         file_path = os.path.join(folder_path, file_name)
         if os.path.isfile(file_path):
             os.remove(file_path)
-            
+
 def merge_with_lat_long(df, lat_long_df):
     lat_long_df = lat_long_df.rename(columns={'ParameterName': 'Parameter'})
 
-    merged_df = pd.merge(df, 
-                  lat_long_df[['WaterBody', 'Year', 'Season', 'Parameter', 'x', 'y','RowID','ResultValue']], 
-                  on=['WaterBody', 'Year', 'Season', 'Parameter'], 
+    merged_df = pd.merge(df,
+                  lat_long_df[['WaterBody', 'Year', 'Season', 'Parameter', 'x', 'y','RowID','ResultValue']],
+                  on=['WaterBody', 'Year', 'Season', 'Parameter'],
                   how='left')
     merged_df['RowID'] = merged_df['RowID'].astype('Int64')
     return merged_df
@@ -51,10 +51,10 @@ def merge_with_lat_long(df, lat_long_df):
 # Function to create shapefiles, preparing for interpolation
 def create_shp_season(df, output_folder):
     grouped = df.groupby(['WaterBody', 'Year', 'Season', 'Parameter'])
-    
+
     for group_keys, group_df in grouped:
         area, year, season, param = group_keys
-        
+
         if area not in area_shortnames:
             print(f"No managed area found with name: {area}")
             continue
@@ -85,7 +85,7 @@ def create_shp_season(df, output_folder):
         os.remove(temp_csv_path)
 
         print(f"Shapefile for {area_shortnames[area]}: {param_shortnames[param]} for year {year} and season {season} has been saved as {feature_class_name}")
-        
+
 def fill_nan_rowids(df, rowid_column):
     # Check if the rowid_column exists in the DataFrame, if not create it
     if rowid_column not in df.columns:
@@ -108,8 +108,8 @@ def fill_nan_rowids(df, rowid_column):
                 df.at[i, rowid_column] = unique_ids[nan_index]
                 nan_index += 1
         return df
-        
-                             
+
+
 # Function to interpolate water quality parameter values using RK method
 def rk_interpolation(method, radius, folder_path, waterbody, parameter, year, season, covariates, out_raster_folder,out_ga_folder,std_error_folder,diagnostic_folder):
     area_shortnames = {
@@ -123,16 +123,16 @@ def rk_interpolation(method, radius, folder_path, waterbody, parameter, year, se
     shpName = []
     for filename in os.listdir(folder):
         if filename.endswith(".shp"):
-            shpName.append(filename)        
+            shpName.append(filename)
     waterbody = waterbody
     parameter = parameter
     year      = str(year)
     season    = season
     covariates= str(covariates)
-    name1 = "SHP_" + "_".join([waterbody,parameter,year,season]) 
+    name1 = "SHP_" + "_".join([waterbody,parameter,year,season])
     name  = name1 + ".shp"
     name2 = "_".join([waterbody,parameter,year,season]) + "_RK"
-    
+
     if name in shpName:
         in_features = folder_path + "shapefiles/" + name
         shapefile_path = os.path.join(folder_path+r"shapefiles", name)
@@ -143,7 +143,7 @@ def rk_interpolation(method, radius, folder_path, waterbody, parameter, year, se
             covname_list = covariates.split("+")
             for i in covname_list:
                 in_explanatory_raster = str(folder_path + "covariates/{}/{}.tif".format(i, waterbody))
-                in_explanatory_rasters.append(in_explanatory_raster)        
+                in_explanatory_rasters.append(in_explanatory_raster)
         else:
             in_explanatory_rasters = str(folder_path + "covariates/{}/{}.tif".format(covariates, waterbody))
 
@@ -159,10 +159,10 @@ def rk_interpolation(method, radius, folder_path, waterbody, parameter, year, se
         try:
             with arcpy.EnvManager(mask = mask,extent = extent,
                                   outputCoordinateSystem = arcpy.SpatialReference(spatialref),
-                                  cellSize = c_size, 
+                                  cellSize = c_size,
                                   parallelProcessingFactor = parProFactor):
-                out_surface_raster = arcpy.EBKRegressionPrediction_ga(in_features = in_features, 
-                                                                  dependent_field = dependent_field, 
+                out_surface_raster = arcpy.EBKRegressionPrediction_ga(in_features = in_features,
+                                                                  dependent_field = dependent_field,
                                                                   out_ga_layer = out_ga_layer,
                                                                   out_raster = out_raster,
                                                                   in_explanatory_rasters = in_explanatory_rasters,
@@ -170,7 +170,7 @@ def rk_interpolation(method, radius, folder_path, waterbody, parameter, year, se
                                                                   transformation_type = 'EMPIRICAL',
                                                                   search_neighborhood =arcpy.SearchNeighborhoodSmoothCircular(smooth_r,0.5))
                 arcpy.GALayerToRasters_ga(out_ga_layer, out_std_error,"PREDICTION_STANDARD_ERROR", None, c_size, 1, 1, "")
-                
+
 
             with arcpy.da.SearchCursor(out_diagnostic_feature_class, ["RMSE","MeanError"]) as cursor:
                 data_points = [row for row in cursor]
