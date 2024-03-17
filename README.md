@@ -8,10 +8,10 @@ This task include:
 3.	Summarizing and comparing RMSE and ME between RK and IWD in the interpolated maps.
 
 Outcomes:
--	[Interpolated maps by IDW using all data](https://usf.box.com/s/pumjyw0qz8qg323057h0o7w0ie8u9yy6)
--	[Interpolated maps by IDW using only continuous data](https://usf.box.com/s/b99xo8qev4l48km9k8a971l4aqa04tbe)
-- [Interpolated maps by RK]()
-- [Comparison of ME, RMSE of the above three methods]()
+-	[Interpolated maps by IDW using all data](https://usf.box.com/s/arxm9dm0d7mibw3vsiyob9bxvet35ght)
+-	[Interpolated maps by IDW using only continuous data](https://usf.box.com/s/o0neeftt00h4q2nxud552aglnektcnyc)
+- [Interpolated maps by RK](https://usf.box.com/s/sk00lz3gdu9qx0hqqhofdd8eb1ap4xdf)
+- [Comparison of ME, RMSE of the above three methods](https://usf.box.com/s/gzgmbuqr3yj5fse8qsla4ik3kg2ekjd0)
 
 
 ## Task 2b: IDW using Continuous Sites and Different Time Bins
