@@ -13,6 +13,26 @@ Outcomes:
 - [Interpolated maps by RK](https://usf.box.com/s/sk00lz3gdu9qx0hqqhofdd8eb1ap4xdf)
 - [Comparison of ME, RMSE of the above three methods](https://usf.box.com/s/gzgmbuqr3yj5fse8qsla4ik3kg2ekjd0)
 
+All data are stored in the folder [..\Box\SEACAR_OEAT_FY22-23\SEACAR_WQ_Analysis_Pilot\Deliverables Task 2a](https://usf.box.com/s/1n84o7e05dfbooaskjw38iw6r1b4oknv)
+```
+├───ArcGIS_project            (ArcGIS project displaying output maps)
+│   └───Interpolated_maps
+├───GIS_Data
+│   ├───Barriers
+│   ├───coastline
+│   ├───covariates
+│   ├───diagnostic_rk
+│   ├───ga_output_rk
+│   ├───**idw_All             (IDW interpolated rasters using all data)**
+│   ├───idw_Con               (IDW interpolated rasters using only continuous data)
+│   ├───managed_area_boundary
+│   ├───OEAT_Waterbody_Boundaries
+│   ├───raster_output_rk      (RK interpolated rasters using only continuous data)
+│   ├───shapefiles_All        (sample points of all data)
+│   ├───shapefiles_Con        (sample points of continuous data)
+│   ├───std_error_rk          (raster maps of standard error)
+│   └───TampaBay_Barrier_ChlApoints
+```
 
 ## Task 2b: IDW using Continuous Sites and Different Time Bins
 
