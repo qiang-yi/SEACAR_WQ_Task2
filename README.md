@@ -23,7 +23,7 @@ All data are stored in the folder [..\Box\SEACAR_OEAT_FY22-23\SEACAR_WQ_Analysis
 │   ├───covariates
 │   ├───diagnostic_rk
 │   ├───ga_output_rk
-│   ├───**idw_All             (IDW interpolated rasters using all data)**
+│   ├───idw_All               (IDW interpolated rasters using all data)
 │   ├───idw_Con               (IDW interpolated rasters using only continuous data)
 │   ├───managed_area_boundary
 │   ├───OEAT_Waterbody_Boundaries
