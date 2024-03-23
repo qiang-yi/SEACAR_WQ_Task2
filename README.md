@@ -3,15 +3,15 @@
 ## Task 2a: Evaluating IDW and RK with Barriers
 
 This task include:
-1.	Develop Python code to create interpolation maps using RK and IDW with barriers for 6 water quality parameters in 5 waterbodies in seasons around selected storms.
+1.	Develop Python code to create interpolation maps using [RK](https://github.com/qiang-yi/SEACAR_WQ_Task2/blob/master/RK.ipynb) and [IDW](https://github.com/qiang-yi/SEACAR_WQ_Task2/blob/master/RK.ipynb) with barriers for 6 water quality parameters in 5 waterbodies in seasons around selected storms.
 2.	Develop [cross-validation algorithm](https://github.com/qiang-yi/SEACAR_WQ_Task2/blob/master/IDW_Analysis.ipynb) to compute RMSE and ME for IDW with barriers.
-3.	Summarizing and comparing RMSE and ME between RK and IWD in the interpolated maps.
+4.	Summarizing and comparing RMSE and ME between RK and IWD in the interpolated maps.
 
 Outcomes:
 -	[Interpolated maps by IDW using all data](https://usf.box.com/s/arxm9dm0d7mibw3vsiyob9bxvet35ght)
 -	[Interpolated maps by IDW using only continuous data](https://usf.box.com/s/o0neeftt00h4q2nxud552aglnektcnyc)
 - [Interpolated maps by RK](https://usf.box.com/s/sk00lz3gdu9qx0hqqhofdd8eb1ap4xdf)
-- [Comparison of ME, RMSE of the above three methods](https://usf.box.com/s/gzgmbuqr3yj5fse8qsla4ik3kg2ekjd0)
+- [Comparison between IDW and RK](https://github.com/qiang-yi/SEACAR_WQ_Task2/blob/master//RK_IDW_comparison.ipynb)
 
 All data are stored in the folder [..\Box\SEACAR_OEAT_FY22-23\SEACAR_WQ_Analysis_Pilot\Deliverables Task 2a](https://usf.box.com/s/1n84o7e05dfbooaskjw38iw6r1b4oknv)
 ```
