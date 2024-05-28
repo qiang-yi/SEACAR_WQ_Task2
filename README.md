@@ -12,7 +12,7 @@ Outcomes:
 -	[Interpolated maps by IDW using only continuous data](https://usf.box.com/s/o0neeftt00h4q2nxud552aglnektcnyc)
 - [Interpolated maps by RK](https://usf.box.com/s/sk00lz3gdu9qx0hqqhofdd8eb1ap4xdf)
 - [RMSE and ME of all above methods](https://usf.box.com/s/gzgmbuqr3yj5fse8qsla4ik3kg2ekjd0)
-- [Analyses of RMSE and ME](https://github.com/qiang-yi/SEACAR_WQ_Task2/blob/master//RK_IDW_comparison.ipynb)
+- [Analyses of RMSE and ME](https://github.com/FloridaSEACAR/SEACAR_WQ_Task2/blob/main/Task_2A/RK_IDW_comparison_v2.ipynb)
 
 All deliverables are stored in the folder [..\Box\SEACAR_OEAT_FY22-23\SEACAR_WQ_Analysis_Pilot\Deliverables Task 2a](https://usf.box.com/s/1n84o7e05dfbooaskjw38iw6r1b4oknv)
 
