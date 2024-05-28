@@ -68,12 +68,12 @@ This task include:
     - [Differences between continuous and discrete data in monthly maps](https://usf.box.com/s/y42vndozw0n9ah52jv84ykr2zv6qebxz)
     - [Differences between continuous and discrete data in weekly maps](https://usf.box.com/s/mim1oqlgtlpg0tl2u9ytsey1p6paifsw)
     - [Kernel density maps of the differences](https://usf.box.com/s/ybvf89ccgkztn0xohl02dqofwyq6c0op)
-    - [Python codes for calculating the differences](https://github.com/FloridaSEACAR/SEACAR_WQ_Task2/blob/main/Task_2B/Kernel_Density.ipynb)
+    - [Python codes for calculating the differences](https://github.com/FloridaSEACAR/SEACAR_WQ_Task2/blob/main/Task_2B/Gap_Analysis_Month_Week.ipynb)
     - [Python codes for generating the kernel density maps](https://github.com/FloridaSEACAR/SEACAR_WQ_Task2/blob/main/Task_2B/Kernel_Density.ipynb)
-    - [Visualization of the kernel density maps](https://github.com/FloridaSEACAR/SEACAR_WQ_Task2/blob/main/Task_2B/Kernel_Density_Map.ipynb)
+    - [Display of the kernel density maps](https://github.com/FloridaSEACAR/SEACAR_WQ_Task2/blob/main/Task_2B/Kernel_Density_Map.ipynb)
 
 
-  All deliverables are stored in the folder [..\Box\SEACAR_OEAT_FY22-23\SEACAR_WQ_Analysis_Pilot\Deliverables Task 2b](https://usf.box.com/s/p3e2uph06y0araw56zwm0a0oh3sgu4f9)
+  All deliverables of Task 2b are stored in the folder [..\Box\SEACAR_OEAT_FY22-23\SEACAR_WQ_Analysis_Pilot\Deliverables Task 2b](https://usf.box.com/s/p3e2uph06y0araw56zwm0a0oh3sgu4f9)
 
 ```
 ├───gap_analysis                  (Deliverables of the gap analysis)
@@ -114,3 +114,12 @@ Calculating summary statistics () of the parameters per monitoring location and 
   - [Guana Tolomato Matanzas]()
 
 - Boxplots per monitoring location can also be viewed from the [web map](https://gis.waterinstitute.usf.edu/maps/SEACAR-OEAT-WQ/), in the "SEACAR OEAT WQ Year 2/OEAT Task 2f Box Plots" layer.
+
+All deliverables of Task 2f are stored in the folder [..\Box\SEACAR_OEAT_FY22-23\SEACAR_WQ_Analysis_Pilot\Deliverables Task 2f](https://usf.box.com/s/m41e9fzs8b8gb3l8q2lcexjee7yzjs84)
+
+```
+├───archive             (archived boxplots)
+├───boxplots            (boxplots of summary statistics)
+├───python              (Python codes generating the statistics and boxplots)
+└───statistics          (tables of summary statistics)
+```
