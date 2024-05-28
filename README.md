@@ -47,29 +47,30 @@ This task include:
     - Option 1: Four seasons in the year of hurricane events
         - [RK interpolated maps](https://usf.box.com/s/oqoujzr6396i0eys9hgelim19hjcdm66)
         - [IDW interpolated maps](https://usf.box.com/s/bomsn99aon61vsk1hyq2pbolnaxq3sp8)
-        - Python codes for the [IDW]() and [RK]() interpolation
+        - [Python codes](https://github.com/FloridaSEACAR/SEACAR_WQ_Task2/blob/main/Task_2B/4Seasons_All.ipynb) for the IDW & RK interpolation
     - Option 2: Four seasons across two years
         - [RK interpolated maps](https://usf.box.com/s/um59gwy0xr4rqo4j3xljf9ndoadt78tc)
         - [IDW interpolated maps](https://usf.box.com/s/0ts270wy54zuoe9u7jywbkep6z74qqdg)
-        - Python codes for the [IDW]() and [RK]() interpolation
+        - [Python codes](https://github.com/FloridaSEACAR/SEACAR_WQ_Task2/blob/main/Task_2B/CrossYear_All.ipynb) for the IDW & RK interpolation
     - Option 3: Two seasons (wet/dry) in two years
         - [RK interpolated maps](https://usf.box.com/s/eec00ic89joxna28brzszoce1lhorldu)
         - [IDW interpolated maps](https://usf.box.com/s/6lopa2426gyf2ajfnfqwcbwjf6v2bv9n)
-        - Python codes for the [IDW]() and [RK]() interpolation.
-    - [Comparison of RK vs IDW in the above options]()
+        - [Python codes](https://github.com/FloridaSEACAR/SEACAR_WQ_Task2/blob/main/Task_2B/2Seasons_All.ipynb) for the IDW & RK interpolation.
+    - [Comparison of RK vs IDW in the 3 season options](https://github.com/FloridaSEACAR/SEACAR_WQ_Task2/blob/main/Task_2B/Result_Analysis_S.ipynb)
   - **Monthly:** Use IDW to interpolate maps for six 30-day increments prior to the storm day, and then six 30-day increments following the storm day. Only continuous data are used.
     - [Interpolated monthly maps](https://usf.box.com/s/t1ndsi3r85xtqq4wt8eli3qizx67ysn9)
-    - [Python codes for the IDW interpolation]()
   - **Weekly:** Use IDW to interpolate maps in 26 7-day increments prior to the storm day, and then 26 7-day increments following the storm day. Only continuous data are used.
     - [Interpolated weekly maps](https://usf.box.com/s/0tlcpc7o3264tcpmwow7q3z7352hovx9)
-    - [Python codes for the IDW interpolation]()
+  - [Python codes for generating the monthly and weekly maps](https://github.com/FloridaSEACAR/SEACAR_WQ_Task2/blob/main/Task_2B/IDW_Con_Month_Week.ipynb)
   - [Analysis of RMSE & ME in the monthly and weekly maps]()
 
 2. A preliminary gap analysis that use discrete data to validate the monthly and weekly maps interpolated using continuous data.
     - [Differences between continuous and discrete data in monthly maps](https://usf.box.com/s/y42vndozw0n9ah52jv84ykr2zv6qebxz)
     - [Differences between continuous and discrete data in weekly maps](https://usf.box.com/s/mim1oqlgtlpg0tl2u9ytsey1p6paifsw)
-    - [Kernel density maps created from the differences](https://usf.box.com/s/ybvf89ccgkztn0xohl02dqofwyq6c0op)
-    - [Visualization of the kernel density maps]()
+    - [Kernel density maps of the differences](https://usf.box.com/s/ybvf89ccgkztn0xohl02dqofwyq6c0op)
+    - [Python codes for calculating the differences](https://github.com/FloridaSEACAR/SEACAR_WQ_Task2/blob/main/Task_2B/Kernel_Density.ipynb)
+    - [Python codes for generating the kernel density maps](https://github.com/FloridaSEACAR/SEACAR_WQ_Task2/blob/main/Task_2B/Kernel_Density.ipynb)
+    - [Visualization of the kernel density maps](https://github.com/FloridaSEACAR/SEACAR_WQ_Task2/blob/main/Task_2B/Kernel_Density_Map.ipynb)
 
 
   All deliverables are stored in the folder [..\Box\SEACAR_OEAT_FY22-23\SEACAR_WQ_Analysis_Pilot\Deliverables Task 2b](https://usf.box.com/s/p3e2uph06y0araw56zwm0a0oh3sgu4f9)
