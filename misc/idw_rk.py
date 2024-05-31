@@ -680,6 +680,178 @@ def idw_interpolation_new(df, folder_path, output_folder, boundary_path, barrier
         except Exception as e:
             print(f"Error removing temp file {file}: {e}")
             
+            
+# IDW interpolation for monthly & weekly data (by Xiang)
+def idw_interpolation1(df, folder_path, output_folder, boundary_path, barrier_folder_path):
+    s_time =time.time() 
+    arcpy.CheckOutExtension("Spatial")
+    arcpy.env.overwriteOutput = True
+    spatialref, c_size, parProFactor,mask = 3086, 30, "40%",''
+
+    unique_combinations = df[['WaterBody', 'Parameter', 'Period','Year']].drop_duplicates()
+    
+    for index, row in unique_combinations.iterrows():
+        water_body_full = row['WaterBody']
+        parameter_full = row['Parameter']
+        period_full = row['Period']
+        year = row['Year']
+        period_name = str(period_full)
+        
+        water_body_short = area_shortnames.get(water_body_full, water_body_full)
+        parameter_short = param_shortnames.get(parameter_full, parameter_full)
+
+        filename = f"SHP_{water_body_short}_{parameter_short}_{year}_{period_name}.shp"
+        filepath = os.path.join(folder_path, filename)
+            
+        if os.path.exists(filepath):
+            print(f"Processing file: {filename}")
+            
+            # Reset the environment settings for the next shapefile
+            arcpy.env.extent = None
+            arcpy.env.mask = None
+            boundary_found = False
+            
+            # Find the boundary for the waterbody
+            with arcpy.da.SearchCursor(boundary_path, ["WaterbodyA"]) as cursor:
+                 for row in cursor:
+                    if row[0] == water_body_short:
+                        boundary_found = True
+                        temp_boundary_path = os.path.join(arcpy.env.scratchFolder, "temp_boundary.shp")
+                        
+                        if arcpy.Exists(temp_boundary_path):
+                                arcpy.Delete_management(temp_boundary_path)
+                        
+                        # Process mask and extent
+                        arcpy.Select_analysis(boundary_path, temp_boundary_path, f"WaterbodyA = '{row[0]}'")
+                        arcpy.DefineProjection_management(temp_boundary_path, arcpy.SpatialReference(spatialref))
+                        extent = arcpy.Describe(temp_boundary_path).extent
+                        arcpy.env.extent = extent
+                        arcpy.env.mask = temp_boundary_path
+                        mask = temp_boundary_path
+                        break
+                        
+            if not boundary_found:
+                    print(f"No boundary found for area {water_body_short}, skipping shapefile {filename}")
+                    continue
+        
+            # Check if data points are sufficient for IDW interpolation
+            data_count = int(arcpy.GetCount_management(filepath).getOutput(0))
+            
+            print(filepath)
+            print(data_count)
+            
+            df_update_index = df[
+                (df['WaterBody'] == water_body_full) & 
+                (df['Parameter'] == parameter_full) &
+                (df['Period'] == period_full)
+            ].index
+
+            df.loc[df_update_index, 'Filename'] = filename
+            df.loc[df_update_index, 'NumDataPoints'] = data_count
+
+            if data_count < 3:
+                print(f"Not enough data for IDW interpolation in {filename}, skipping")
+                df.loc[df_update_index, 'RMSE'] = "NaN"
+                df.loc[df_update_index, 'ME'] = "NaN"
+                df.to_csv(os.path.join(output_folder, "updated_idw.csv"), index=False) 
+                continue  
+                 
+            # Handle barrier files if they exist
+            barrier_file_name = f"{water_body_short}_Barriers.shp"
+            barrier_file_path = os.path.join(barrier_folder_path, barrier_file_name)
+            
+            if not arcpy.Exists(barrier_file_path):
+                print(f"No barrier file found for {water_body_short}, using IDW without barriers")
+                barrier_file_path = None
+                
+            # Perform IDW interpolation and cross-validation
+            z_field = "ResultValu"
+            errors = []
+            
+            with arcpy.da.SearchCursor(filepath, ["RowID_", "SHAPE@", z_field]) as cursor:
+                data_points = [row for row in cursor]
+                    
+            file_cross_validation_count = 0
+            
+            for test_point in data_points:
+                temp_dataset = os.path.join(arcpy.env.scratchFolder, "temp_dataset.shp")
+                if arcpy.Exists(temp_dataset):
+                    arcpy.Delete_management(temp_dataset)
+                    
+                query = f"RowID_ <> {test_point[0]}"
+                arcpy.Select_analysis(filepath, temp_dataset, query)
+                    
+                idw_result = arcpy.sa.Idw(temp_dataset, z_field,in_barrier_polyline_features=barrier_file_path)
+                    
+                point_geometry = test_point[1]  # Get PointGeometry
+                point = point_geometry.firstPoint  # Get Point
+                location_str = f"{point.X} {point.Y}"
+                    
+                raster_save_path = os.path.join(output_folder, "idw_result.tif")
+                
+                if arcpy.Exists(raster_save_path):
+                    arcpy.Delete_management(raster_save_path)
+                idw_result.save(raster_save_path)
+                
+                interpolated_value = arcpy.management.GetCellValue(raster_save_path, location_str, "1").getOutput(0)  
+                file_cross_validation_count += 1
+                
+                if interpolated_value != 'NoData':
+                    error = float(interpolated_value) - float(test_point[2])
+                    errors.append(error)
+                else:
+                    errors.append(None)   
+                arcpy.Delete_management(temp_dataset)
+                
+            rmse, me = calculate_rmse_me(errors)
+
+            print(f"File {filename} has completed {file_cross_validation_count} cross-validation iterations.")
+            
+            df.loc[df_update_index, 'RMSE'] = rmse
+            df.loc[df_update_index, 'ME'] = me
+            df.to_csv(os.path.join(output_folder, "updated_idw.csv"), index=False) 
+
+            # Create the final IDW raster for visualization (not for cross-validation)
+            with arcpy.EnvManager(outputCoordinateSystem = arcpy.SpatialReference(spatialref),
+                                  cellSize = c_size, 
+                                  parallelProcessingFactor = parProFactor):
+                idw_result_final = arcpy.sa.Idw(filepath, z_field,in_barrier_polyline_features=barrier_file_path)
+            out_raster_name_final = f"{water_body_short}_{parameter_short}_IDW_{year}_{period_name}.tif"
+            out_raster_path_final = os.path.join(output_folder, out_raster_name_final)
+            idw_result_final.save(out_raster_path_final)
+            #print(f"Interpolation complete for file: {filename}")
+            
+        else:
+            print(f"Shapefile not found for: {filename}")
+            df_update_index = df[
+                (df['WaterBody'] == water_body_full) &
+                (df['Parameter'] == parameter_full) &
+                (df['Period'] == period_full)
+            ].index
+
+            df.loc[df_update_index, 'Filename'] = 'NoData'
+            df.loc[df_update_index, 'NumDataPoints'] = 0
+            df.loc[df_update_index, 'RMSE'] = "NaN"
+            df.loc[df_update_index, 'ME'] = "NaN"
+
+            # Save updates to csv
+            df.to_csv(os.path.join(output_folder, "updated_idw.csv"), index=False)
+            continue
+    e_time =time.time() 
+    print(f"Calculated RMSE: {rmse}, ME: {me} for file: {filename}. Time used: {e_time - s_time}")
+             
+    arcpy.ClearWorkspaceCache_management()
+    arcpy.CheckInExtension("Spatial")
+    
+    # Clean up temp files
+    temp_files = [os.path.join(arcpy.env.scratchFolder, f) for f in os.listdir(arcpy.env.scratchFolder) if f.startswith("temp_")]
+    for file in temp_files:
+        try:
+            if os.path.isfile(file):
+                os.remove(file)
+        except Exception as e:
+            print(f"Error removing temp file {file}: {e}")  
+            
 # sampled cross-validation for Task 2B
 def idw_interpolation_sampled(df, folder_path, output_folder, boundary_path, barrier_folder_path, season_col_name, include_start_year=True, percentage=None):
     s_time = time.time()
